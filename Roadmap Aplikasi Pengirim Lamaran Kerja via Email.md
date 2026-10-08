@@ -11,9 +11,9 @@ Roadmap ini mengasumsikan Flask. Kalau memilih Laravel, urutan fase tetap sama.
 - [x] Target posisi: teknisi jaringan dan IT support
 - [x] Aturan main: 20-30 email per hari, tiap email dipersonalisasi
 
-## Fase 1: Setup dan tes kirim (hari 1)
+## Fase 1: Setup dan tes kirim (hari 1) ✅
 
-- [ ] Task 1: Buat project, virtual environment, dan repo GitHub
+- [x] Task 1: Buat project, virtual environment, dan repo GitHub
 - [ ] Task 2: Aktifkan verifikasi 2 langkah di Gmail, lalu buat App Password
 - [ ] Task 3: Simpan kredensial di file `.env` (jangan masuk GitHub)
 - [ ] Task 4: Tes kirim satu email dengan CV terlampir ke email sendiri
