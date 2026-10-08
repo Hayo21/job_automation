@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 
 from app.mailer.services import EmailService, RateLimiter, EmailResult
-from app.mailer.templates import render_template, get_categories, TemplateData
+from app.mailer.templates import render_template as render_email_template, get_categories, TemplateData
 from app.config import Config
 
 
@@ -53,7 +53,7 @@ def handle_send():
         return redirect(url_for("mailer.index"))
 
     data = TemplateData(perusahaan=perusahaan, posisi=posisi)
-    subject, body_text = render_template(kategori, data)
+    subject, body_text = render_email_template(kategori, data)
     body_html = body_text.replace("\n", "<br>")
 
     get_rate_limiter().wait_if_needed()
