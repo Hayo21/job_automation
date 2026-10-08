@@ -49,6 +49,15 @@ def init_db() -> None:
                 last_retry TEXT
             )
         """)
+        # Migration: add missing columns if table exists without them
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(lamaran)")}
+        if "error" not in cols:
+            conn.execute("ALTER TABLE lamaran ADD COLUMN error TEXT")
+        if "retry_count" not in cols:
+            conn.execute("ALTER TABLE lamaran ADD COLUMN retry_count INTEGER DEFAULT 0")
+        if "last_retry" not in cols:
+            conn.execute("ALTER TABLE lamaran ADD COLUMN last_retry TEXT")
+        
         conn.execute("CREATE INDEX IF NOT EXISTS idx_lamaran_email ON lamaran(email)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_lamaran_perusahaan ON lamaran(perusahaan)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_lamaran_tanggal ON lamaran(tanggal)")

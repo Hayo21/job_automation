@@ -49,12 +49,12 @@ Selesai kalau: tidak bisa mengirim dua kali ke tujuan yang sama, dan semua lamar
 
 Selesai kalau: ada login, retry gagal, reminder 7 hari, export CSV. ✅ **SELESAI**
 
-## Fase 5: Penutup (hari 7)
+## Fase 5: Penutup (hari 7) ✅
 
-- [ ] Task 19: Rapikan tampilan dan tulis README
-- [ ] Task 20: Unggah ke GitHub (tanpa `.env`)
+- [x] Task 19: Rapikan tampilan dan tulis README
+- [x] Task 20: Unggah ke GitHub (tanpa `.env`)
 
-Proyek ini nanti bisa masuk bagian proyek di CV, dengan satu baris seperti "Aplikasi pengelola lamaran kerja berbasis Flask".
+Proyek ini nanti bisa masuk bagian proyek di CV, dengan satu baris seperti "Aplikasi pengelola lamaran kerja berbasis Flask". ✅ **SELESAI**
 
 ## Fitur ditunda (hanya kalau sempat)
 
