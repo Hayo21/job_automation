@@ -1,0 +1,74 @@
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
+
+from app.mailer.services import EmailService, RateLimiter, EmailResult
+from app.mailer.templates import render_template, get_categories, TemplateData
+from app.config import Config
+
+
+bp = Blueprint("mailer", __name__)
+
+_email_service: EmailService | None = None
+_rate_limiter: RateLimiter | None = None
+
+
+def get_email_service() -> EmailService:
+    global _email_service
+    if _email_service is None:
+        _email_service = EmailService(current_app.config)
+    return _email_service
+
+
+def get_rate_limiter() -> RateLimiter:
+    global _rate_limiter
+    if _rate_limiter is None:
+        _rate_limiter = RateLimiter(current_app.config["EMAIL_DELAY_SECONDS"])
+    return _rate_limiter
+
+
+@bp.route("/", methods=["GET", "POST"])
+def index():
+    categories = get_categories()
+    errors = Config.validate()
+    for err in errors:
+        flash(err, "danger")
+
+    if request.method == "POST":
+        return handle_send()
+
+    return render_template("index.html", categories=categories)
+
+
+def handle_send():
+    perusahaan = request.form.get("perusahaan", "").strip()
+    posisi = request.form.get("posisi", "").strip()
+    email_hrd = request.form.get("email_hrd", "").strip()
+    kategori = request.form.get("kategori", "").strip()
+
+    if not all([perusahaan, posisi, email_hrd, kategori]):
+        flash("Semua field wajib diisi.", "danger")
+        return redirect(url_for("mailer.index"))
+
+    if kategori not in get_categories():
+        flash("Kategori tidak valid.", "danger")
+        return redirect(url_for("mailer.index"))
+
+    data = TemplateData(perusahaan=perusahaan, posisi=posisi)
+    subject, body_text = render_template(kategori, data)
+    body_html = body_text.replace("\n", "<br>")
+
+    get_rate_limiter().wait_if_needed()
+
+    result: EmailResult = get_email_service().send(
+        to_email=email_hrd,
+        subject=subject,
+        body_html=body_html,
+        body_text=body_text,
+        attachment_path=current_app.config["CV_PATH"],
+    )
+
+    if result.success:
+        flash(result.message, "success")
+    else:
+        flash(f"Gagal: {result.message}", "danger")
+
+    return redirect(url_for("mailer.index"))
