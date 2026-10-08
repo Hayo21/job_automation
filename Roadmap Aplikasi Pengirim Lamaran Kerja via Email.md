@@ -14,21 +14,21 @@ Roadmap ini mengasumsikan Flask. Kalau memilih Laravel, urutan fase tetap sama.
 ## Fase 1: Setup dan tes kirim (hari 1) ✅
 
 - [x] Task 1: Buat project, virtual environment, dan repo GitHub
-- [ ] Task 2: Aktifkan verifikasi 2 langkah di Gmail, lalu buat App Password
-- [ ] Task 3: Simpan kredensial di file `.env` (jangan masuk GitHub)
-- [ ] Task 4: Tes kirim satu email dengan CV terlampir ke email sendiri
+- [x] Task 2: Aktifkan verifikasi 2 langkah di Gmail, lalu buat App Password
+- [x] Task 3: Simpan kredensial di file `.env` (jangan masuk GitHub)
+- [x] Task 4: Tes kirim satu email dengan CV terlampir ke email sendiri
 
-Selesai kalau: email tes sampai di inbox dengan lampiran CV yang bisa dibuka.
+Selesai kalau: email tes sampai di inbox dengan lampiran CV yang bisa dibuka. ✅ **TERKIRIM SEMPURNA**
 
-## Fase 2: MVP, inti aplikasi (hari 2-3)
+## Fase 2: MVP, inti aplikasi (hari 2-3) ✅
 
-- [ ] Task 5: Form input: email HRD, nama perusahaan, posisi, kategori
-- [ ] Task 6: Buat 3 templat (Teknisi Jaringan, IT Support, Teknisi IT Pabrik) dengan kolom otomatis `{perusahaan}` dan `{posisi}`
-- [ ] Task 7: Halaman pratinjau sebelum kirim
-- [ ] Task 8: Tombol kirim, lalu CV PDF terlampir otomatis
-- [ ] Task 9: Validasi format email dan pesan sukses/gagal
+- [x] Task 5: Form input: email HRD, nama perusahaan, posisi, kategori
+- [x] Task 6: Buat 3 templat (Teknisi Jaringan, IT Support, Teknisi IT Pabrik) dengan kolom otomatis `{perusahaan}` dan `{posisi}`
+- [x] Task 7: Halaman pratinjau sebelum kirim
+- [x] Task 8: Tombol kirim, lalu CV PDF terlampir otomatis
+- [x] Task 9: Validasi format email dan pesan sukses/gagal
 
-Selesai kalau: bisa mengisi form, melihat pratinjau, lalu mengirim lamaran sungguhan dari website.
+Selesai kalau: bisa mengisi form, melihat pratinjau, lalu mengirim lamaran sungguhan dari website. ✅ **SELESAI**
 
 ## Fase 3: Riwayat dan pengaman (hari 4-5)
 

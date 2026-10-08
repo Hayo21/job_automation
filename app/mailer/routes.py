@@ -28,17 +28,17 @@ def get_rate_limiter() -> RateLimiter:
 @bp.route("/", methods=["GET", "POST"])
 def index():
     categories = get_categories()
-    errors = Config.validate()
+    errors = current_app.config.get("CONFIG_ERRORS", [])
     for err in errors:
         flash(err, "danger")
 
     if request.method == "POST":
-        return handle_send()
+        return handle_preview()
 
     return render_template("index.html", categories=categories)
 
 
-def handle_send():
+def handle_preview():
     perusahaan = request.form.get("perusahaan", "").strip()
     posisi = request.form.get("posisi", "").strip()
     email_hrd = request.form.get("email_hrd", "").strip()
@@ -52,8 +52,46 @@ def handle_send():
         flash("Kategori tidak valid.", "danger")
         return redirect(url_for("mailer.index"))
 
+    if not _validate_email(email_hrd):
+        flash("Format email tidak valid.", "danger")
+        return redirect(url_for("mailer.index"))
+
     data = TemplateData(perusahaan=perusahaan, posisi=posisi)
     subject, body_text = render_email_template(kategori, data)
+    body_html = body_text.replace("\n", "<br>")
+
+    cv_filename = current_app.config["CV_PATH"].name
+
+    return render_template(
+        "preview.html",
+        perusahaan=perusahaan,
+        posisi=posisi,
+        email_hrd=email_hrd,
+        kategori=kategori,
+        subject=subject,
+        body_html=body_html,
+        body_text=body_text,
+        cv_filename=cv_filename,
+    )
+
+
+@bp.route("/send", methods=["POST"])
+def send():
+    perusahaan = request.form.get("perusahaan", "").strip()
+    posisi = request.form.get("posisi", "").strip()
+    email_hrd = request.form.get("email_hrd", "").strip()
+    kategori = request.form.get("kategori", "").strip()
+    subject = request.form.get("subject", "").strip()
+    body_text = request.form.get("body_text", "")
+
+    if not all([perusahaan, posisi, email_hrd, kategori, subject, body_text]):
+        flash("Data tidak lengkap.", "danger")
+        return redirect(url_for("mailer.index"))
+
+    if not _validate_email(email_hrd):
+        flash("Format email tidak valid.", "danger")
+        return redirect(url_for("mailer.index"))
+
     body_html = body_text.replace("\n", "<br>")
 
     get_rate_limiter().wait_if_needed()
@@ -72,3 +110,7 @@ def handle_send():
         flash(f"Gagal: {result.message}", "danger")
 
     return redirect(url_for("mailer.index"))
+
+
+def _validate_email(email: str) -> bool:
+    return "@" in email and "." in email.split("@")[-1]

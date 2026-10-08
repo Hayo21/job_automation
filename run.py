@@ -4,11 +4,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app import create_app
+from app.config import Config
 
 app = create_app()
 
 if __name__ == "__main__":
-    errors = app.config["CONFIG_ERRORS"] if "CONFIG_ERRORS" in app.config else []
+    errors = Config.validate()
     if errors:
         for err in errors:
             print(f"KONFIGURASI ERROR: {err}", file=sys.stderr)
