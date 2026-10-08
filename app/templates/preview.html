@@ -31,6 +31,9 @@
 
     <div class="cv-notice">
         <strong>CV akan terlampir otomatis:</strong> {{ cv_filename }} (PDF)
+        {% if sent_today is defined %}
+        <br><strong>Terkirim hari ini:</strong> {{ sent_today }} / {{ max_daily }}
+        {% endif %}
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}

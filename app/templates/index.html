@@ -21,7 +21,10 @@
     </style>
 </head>
 <body>
-    <h1>Pengirim Lamaran Kerja</h1>
+    <header style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+        <h1>Pengirim Lamaran Kerja</h1>
+        <a href="{{ url_for('mailer.riwayat') }}" class="btn" style="background:#6b7280; color:white; padding:0.5rem 1rem; border-radius:4px; text-decoration:none; font-size:0.875rem;">Riwayat</a>
+    </header>
 
     <div class="cv-notice">
         <strong>Catatan:</strong> Pastikan file CV (cv.pdf) ada di folder root project sebelum mengirim.

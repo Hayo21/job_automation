@@ -2,6 +2,10 @@ from flask import Blueprint, render_template, request, flash, redirect, url_for,
 
 from app.mailer.services import EmailService, RateLimiter, EmailResult
 from app.mailer.templates import render_template as render_email_template, get_categories, TemplateData
+from app.models import (
+    init_db, count_today, check_duplicate, save_lamaran,
+    get_all_lamaran, update_status, get_stats, Lamaran
+)
 from app.config import Config
 
 
@@ -23,6 +27,11 @@ def get_rate_limiter() -> RateLimiter:
     if _rate_limiter is None:
         _rate_limiter = RateLimiter(current_app.config["EMAIL_DELAY_SECONDS"])
     return _rate_limiter
+
+
+@bp.before_app_request
+def ensure_db_init():
+    init_db()
 
 
 @bp.route("/", methods=["GET", "POST"])
@@ -56,6 +65,22 @@ def handle_preview():
         flash("Format email tidak valid.", "danger")
         return redirect(url_for("mailer.index"))
 
+    # Cek duplikat
+    dup = check_duplicate(perusahaan, email_hrd)
+    if dup:
+        flash(
+            f"Peringatan: Sudah pernah kirim ke {dup.email} ({dup.perusahaan}) "
+            f"pada {dup.tanggal.split()[0]} - Status: {dup.status}",
+            "warning"
+        )
+
+    # Cek batas harian
+    max_daily = current_app.config["MAX_DAILY_EMAILS"]
+    sent_today = count_today()
+    if sent_today >= max_daily:
+        flash(f"Batas harian tercapai ({max_daily} email). Coba besok.", "danger")
+        return redirect(url_for("mailer.index"))
+
     data = TemplateData(perusahaan=perusahaan, posisi=posisi)
     subject, body_text = render_email_template(kategori, data)
     body_html = body_text.replace("\n", "<br>")
@@ -72,6 +97,8 @@ def handle_preview():
         body_html=body_html,
         body_text=body_text,
         cv_filename=cv_filename,
+        sent_today=sent_today,
+        max_daily=max_daily,
     )
 
 
@@ -92,6 +119,12 @@ def send():
         flash("Format email tidak valid.", "danger")
         return redirect(url_for("mailer.index"))
 
+    # Cek batas harian sekali lagi (race condition protection)
+    max_daily = current_app.config["MAX_DAILY_EMAILS"]
+    if count_today() >= max_daily:
+        flash(f"Batas harian tercapai ({max_daily} email).", "danger")
+        return redirect(url_for("mailer.index"))
+
     body_html = body_text.replace("\n", "<br>")
 
     get_rate_limiter().wait_if_needed()
@@ -105,11 +138,48 @@ def send():
     )
 
     if result.success:
+        save_lamaran(perusahaan, posisi, email_hrd, kategori)
         flash(result.message, "success")
     else:
         flash(f"Gagal: {result.message}", "danger")
 
     return redirect(url_for("mailer.index"))
+
+
+@bp.route("/riwayat")
+def riwayat():
+    kategori_filter = request.args.get("kategori", "").strip()
+    status_filter = request.args.get("status", "").strip()
+
+    if kategori_filter and kategori_filter not in get_categories():
+        kategori_filter = ""
+    valid_status = {"Menunggu", "Dipanggil", "Ditolak"}
+    if status_filter and status_filter not in valid_status:
+        status_filter = ""
+
+    lamaran_list = get_all_lamaran(kategori_filter or None, status_filter or None)
+    stats = get_stats()
+    categories = get_categories()
+
+    return render_template(
+        "riwayat.html",
+        lamaran_list=lamaran_list,
+        stats=stats,
+        categories=categories,
+        current_kategori=kategori_filter,
+        current_status=status_filter,
+        valid_status=valid_status,
+    )
+
+
+@bp.route("/riwayat/<int:lamaran_id>/status", methods=["POST"])
+def ubah_status(lamaran_id: int):
+    new_status = request.form.get("status", "").strip()
+    if update_status(lamaran_id, new_status):
+        flash(f"Status diubah ke {new_status}", "success")
+    else:
+        flash("Gagal mengubah status", "danger")
+    return redirect(url_for("mailer.riwayat"))
 
 
 def _validate_email(email: str) -> bool:

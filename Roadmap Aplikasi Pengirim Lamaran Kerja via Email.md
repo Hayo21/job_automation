@@ -30,15 +30,15 @@ Selesai kalau: email tes sampai di inbox dengan lampiran CV yang bisa dibuka. �
 
 Selesai kalau: bisa mengisi form, melihat pratinjau, lalu mengirim lamaran sungguhan dari website. ✅ **SELESAI**
 
-## Fase 3: Riwayat dan pengaman (hari 4-5)
+## Fase 3: Riwayat dan pengaman (hari 4-5) ✅
 
-- [ ] Task 10: Tabel `lamaran` di SQLite (perusahaan, posisi, email, kategori, tanggal, status)
-- [ ] Task 11: Cek duplikat: peringatan kalau email atau perusahaan itu sudah pernah dikirimi
-- [ ] Task 12: Batas harian (misalnya maksimal 25) dan jeda antar kirim
-- [ ] Task 13: Halaman riwayat dengan filter kategori dan status
-- [ ] Task 14: Ubah status: Menunggu, Dipanggil, Ditolak
+- [x] Task 10: Tabel `lamaran` di SQLite (perusahaan, posisi, email, kategori, tanggal, status)
+- [x] Task 11: Cek duplikat: peringatan kalau email atau perusahaan itu sudah pernah dikirimi
+- [x] Task 12: Batas harian (misalnya maksimal 25) dan jeda antar kirim
+- [x] Task 13: Halaman riwayat dengan filter kategori dan status
+- [x] Task 14: Ubah status: Menunggu, Dipanggil, Ditolak
 
-Selesai kalau: tidak bisa mengirim dua kali ke tujuan yang sama, dan semua lamaran tercatat.
+Selesai kalau: tidak bisa mengirim dua kali ke tujuan yang sama, dan semua lamaran tercatat. ✅ **SELESAI**
 
 ## Fase 4: Kenyamanan (hari 6)
 
