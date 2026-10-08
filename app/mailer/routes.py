@@ -1,12 +1,12 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, session, Response
 
 from app.mailer.services import EmailService, RateLimiter, EmailResult
 from app.mailer.templates import render_template as render_email_template, get_categories, TemplateData
 from app.models import (
     init_db, count_today, check_duplicate, save_lamaran,
-    get_all_lamaran, update_status, get_stats, Lamaran
+    get_all_lamaran, update_status, get_stats, get_lamaran_by_id, retry_lamaran, export_csv
 )
-from app.config import Config
+from app.auth import login_required, check_password
 
 
 bp = Blueprint("mailer", __name__)
@@ -34,7 +34,33 @@ def ensure_db_init():
     init_db()
 
 
+@bp.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("logged_in"):
+        return redirect(url_for("mailer.index"))
+
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if check_password(password):
+            session["logged_in"] = True
+            flash("Login berhasil.", "success")
+            next_url = request.args.get("next") or url_for("mailer.index")
+            return redirect(next_url)
+        else:
+            flash("Password salah.", "danger")
+
+    return render_template("login.html")
+
+
+@bp.route("/logout")
+def logout():
+    session.clear()
+    flash("Anda telah logout.", "info")
+    return redirect(url_for("mailer.login"))
+
+
 @bp.route("/", methods=["GET", "POST"])
+@login_required
 def index():
     categories = get_categories()
     errors = current_app.config.get("CONFIG_ERRORS", [])
@@ -103,6 +129,7 @@ def handle_preview():
 
 
 @bp.route("/send", methods=["POST"])
+@login_required
 def send():
     perusahaan = request.form.get("perusahaan", "").strip()
     posisi = request.form.get("posisi", "").strip()
@@ -141,19 +168,21 @@ def send():
         save_lamaran(perusahaan, posisi, email_hrd, kategori)
         flash(result.message, "success")
     else:
-        flash(f"Gagal: {result.message}", "danger")
+        save_lamaran(perusahaan, posisi, email_hrd, kategori, error=result.message)
+        flash(f"Gagal: {result.message} (tersimpan untuk retry)", "warning")
 
     return redirect(url_for("mailer.index"))
 
 
 @bp.route("/riwayat")
+@login_required
 def riwayat():
     kategori_filter = request.args.get("kategori", "").strip()
     status_filter = request.args.get("status", "").strip()
 
     if kategori_filter and kategori_filter not in get_categories():
         kategori_filter = ""
-    valid_status = {"Menunggu", "Dipanggil", "Ditolak"}
+    valid_status = {"Menunggu", "Dipanggil", "Ditolak", "Gagal"}
     if status_filter and status_filter not in valid_status:
         status_filter = ""
 
@@ -173,6 +202,7 @@ def riwayat():
 
 
 @bp.route("/riwayat/<int:lamaran_id>/status", methods=["POST"])
+@login_required
 def ubah_status(lamaran_id: int):
     new_status = request.form.get("status", "").strip()
     if update_status(lamaran_id, new_status):
@@ -180,6 +210,53 @@ def ubah_status(lamaran_id: int):
     else:
         flash("Gagal mengubah status", "danger")
     return redirect(url_for("mailer.riwayat"))
+
+
+@bp.route("/riwayat/<int:lamaran_id>/retry", methods=["POST"])
+@login_required
+def retry(lamaran_id: int):
+    lamaran = get_lamaran_by_id(lamaran_id)
+    if not lamaran:
+        flash("Data tidak ditemukan.", "danger")
+        return redirect(url_for("mailer.riwayat"))
+
+    if lamaran.status != "Gagal":
+        flash("Hanya lamaran dengan status Gagal yang bisa di-retry.", "warning")
+        return redirect(url_for("mailer.riwayat"))
+
+    # Retry kirim
+    data = TemplateData(perusahaan=lamaran.perusahaan, posisi=lamaran.posisi)
+    subject, body_text = render_email_template(lamaran.kategori, data)
+    body_html = body_text.replace("\n", "<br>")
+
+    get_rate_limiter().wait_if_needed()
+
+    result: EmailResult = get_email_service().send(
+        to_email=lamaran.email,
+        subject=subject,
+        body_html=body_html,
+        body_text=body_text,
+        attachment_path=current_app.config["CV_PATH"],
+    )
+
+    if result.success:
+        retry_lamaran(lamaran_id)
+        flash("Retry berhasil! Email terkirim.", "success")
+    else:
+        flash(f"Retry gagal: {result.message}", "danger")
+
+    return redirect(url_for("mailer.riwayat"))
+
+
+@bp.route("/riwayat/export")
+@login_required
+def export():
+    csv_content = export_csv()
+    return Response(
+        csv_content,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=riwayat_lamaran.csv"}
+    )
 
 
 def _validate_email(email: str) -> bool:

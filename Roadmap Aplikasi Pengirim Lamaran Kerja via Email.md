@@ -40,12 +40,14 @@ Selesai kalau: bisa mengisi form, melihat pratinjau, lalu mengirim lamaran sungg
 
 Selesai kalau: tidak bisa mengirim dua kali ke tujuan yang sama, dan semua lamaran tercatat. ✅ **SELESAI**
 
-## Fase 4: Kenyamanan (hari 6)
+## Fase 4: Kenyamanan (hari 6) ✅
 
-- [ ] Task 15: Login sederhana, supaya hanya pemilik yang bisa memakai
-- [ ] Task 16: Penanganan email gagal kirim dan opsi kirim ulang
-- [ ] Task 17: Penanda lamaran yang lebih dari 7 hari belum dibalas (pengingat tindak lanjut)
-- [ ] Task 18: Ekspor riwayat ke CSV
+- [x] Task 15: Login sederhana, supaya hanya pemilik yang bisa memakai
+- [x] Task 16: Penanganan email gagal kirim dan opsi kirim ulang
+- [x] Task 17: Penanda lamaran yang lebih dari 7 hari belum dibalas (pengingat tindak lanjut)
+- [x] Task 18: Ekspor riwayat ke CSV
+
+Selesai kalau: ada login, retry gagal, reminder 7 hari, export CSV. ✅ **SELESAI**
 
 ## Fase 5: Penutup (hari 7)
 

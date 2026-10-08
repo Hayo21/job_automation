@@ -17,6 +17,7 @@ class Config:
     CV_PATH = BASE_DIR / os.getenv("CV_PATH", "cv.pdf")
     MAX_DAILY_EMAILS = int(os.getenv("MAX_DAILY_EMAILS", 25))
     EMAIL_DELAY_SECONDS = int(os.getenv("EMAIL_DELAY_SECONDS", 30))
+    LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "changeme")
 
     @classmethod
     def validate(cls) -> list[str]:
@@ -29,4 +30,6 @@ class Config:
             errors.append("MAIL_DEFAULT_SENDER tidak diset di .env")
         if not cls.CV_PATH.exists():
             errors.append(f"CV tidak ditemukan: {cls.CV_PATH}")
+        if cls.LOGIN_PASSWORD == "changeme":
+            errors.append("LOGIN_PASSWORD masih default! Ganti di .env")
         return errors

@@ -6,7 +6,7 @@
     <title>Riwayat Lamaran</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: system-ui, sans-serif; line-height: 1.6; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+        body { font-family: system-ui, sans-serif; line-height: 1.6; max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
         h1 { margin-bottom: 1rem; color: #1a1a2e; }
         .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center; }
@@ -16,6 +16,8 @@
         .stat-menunggu { background: #dbeafe; border-color: #93c5fd; }
         .stat-dipanggil { background: #dcfce7; border-color: #86efac; }
         .stat-ditolak { background: #fee2e2; border-color: #fca5a5; }
+        .stat-gagal { background: #fee2e2; border-color: #fca5a5; }
+        .stat-reminder { background: #fef3c7; border-color: #f59e0b; }
 
         .filters { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: end; }
         .filter-group { display: flex; flex-direction: column; gap: 0.25rem; }
@@ -24,6 +26,12 @@
         .btn { padding: 0.5rem 1rem; border: none; border-radius: 4px; font-size: 0.875rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
         .btn-secondary { background: #6b7280; color: white; }
         .btn-secondary:hover { background: #4b5563; }
+        .btn-primary { background: #2563eb; color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-warning:hover { background: #d97706; }
 
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
         th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
@@ -33,7 +41,8 @@
         .status-menunggu { background: #fef3c7; color: #92400e; }
         .status-dipanggil { background: #dcfce7; color: #166534; }
         .status-ditolak { background: #fee2e2; color: #991b1b; }
-        .status-form { display: flex; gap: 0.25rem; }
+        .status-gagal { background: #fee2e2; color: #991b1b; }
+        .status-form { display: flex; gap: 0.25rem; flex-wrap: wrap; }
         .status-form select { padding: 0.25rem; font-size: 0.75rem; border: 1px solid #d1d5db; border-radius: 4px; }
         .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
         .empty { text-align: center; padding: 3rem; color: #6b7280; }
@@ -41,6 +50,9 @@
         .flash-success { background: #dcfce7; color: #166534; }
         .flash-danger { background: #fee2e2; color: #991b1b; }
         .flash-warning { background: #fef3c7; color: #92400e; }
+        .flash-info { background: #dbeafe; color: #1e40af; }
+        .error-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626; font-size: 0.75rem; }
+        .reminder-badge { background: #fef3c7; color: #92400e; padding: 0.125rem 0.375rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -67,6 +79,14 @@
             <div class="stat-value">{{ stats.ditolak }}</div>
             <div class="stat-label">Ditolak</div>
         </div>
+        <div class="stat-card stat-gagal">
+            <div class="stat-value">{{ stats.gagal }}</div>
+            <div class="stat-label">Gagal Kirim</div>
+        </div>
+        <div class="stat-card stat-reminder">
+            <div class="stat-value">{{ stats.reminder_7_hari }}</div>
+            <div class="stat-label">>7 Hari (Follow-up)</div>
+        </div>
     </div>
 
     <form method="GET" class="filters">
@@ -88,10 +108,12 @@
                 <option value="Menunggu" {% if current_status == 'Menunggu' %}selected{% endif %}>Menunggu</option>
                 <option value="Dipanggil" {% if current_status == 'Dipanggil' %}selected{% endif %}>Dipanggil</option>
                 <option value="Ditolak" {% if current_status == 'Ditolak' %}selected{% endif %}>Ditolak</option>
+                <option value="Gagal" {% if current_status == 'Gagal' %}selected{% endif %}>Gagal</option>
             </select>
         </div>
         <button type="submit" class="btn btn-secondary">Filter</button>
         <a href="{{ url_for('mailer.riwayat') }}" class="btn btn-secondary">Reset</a>
+        <a href="{{ url_for('mailer.export') }}" class="btn btn-primary">Export CSV</a>
         <a href="{{ url_for('mailer.index') }}" class="btn btn-secondary" style="margin-left: auto;">Kirim Baru</a>
     </form>
 
@@ -113,26 +135,49 @@
                 <th>Email HRD</th>
                 <th>Kategori</th>
                 <th>Status</th>
+                <th>Error</th>
                 <th>Aksi</th>
             </tr>
         </thead>
         <tbody>
             {% for l in lamaran_list %}
             <tr>
-                <td>{{ l.tanggal.split()[0] }}<br><small>{{ l.tanggal.split()[1] if l.tanggal.split()|length > 1 else '' }}</small></td>
+                <td>
+                    {{ l.tanggal.split()[0] }}
+                    {% if l.status == 'Menunggu' %}
+                        {% set days_diff = (l.tanggal.split()[0] | datetime_diff) %}
+                        {% if days_diff > 7 %}
+                        <br><span class="reminder-badge">⏰ {{ days_diff }} hari</span>
+                        {% endif %}
+                    {% endif %}
+                    <br><small>{{ l.tanggal.split()[1] if l.tanggal.split()|length > 1 else '' }}</small>
+                </td>
                 <td>{{ l.perusahaan }}</td>
                 <td>{{ l.posisi }}</td>
                 <td>{{ l.email }}</td>
                 <td>{{ l.kategori.replace('_', ' ').title() }}</td>
                 <td><span class="status-badge status-{{ l.status.lower() }}">{{ l.status }}</span></td>
                 <td>
-                    <form method="POST" action="{{ url_for('mailer.ubah_status', lamaran_id=l.id) }}" class="status-form">
-                        <select name="status" onchange="this.form.submit()">
-                            <option value="Menunggu" {% if l.status == 'Menunggu' %}selected{% endif %}>Menunggu</option>
-                            <option value="Dipanggil" {% if l.status == 'Dipanggil' %}selected{% endif %}>Dipanggil</option>
-                            <option value="Ditolak" {% if l.status == 'Ditolak' %}selected{% endif %}>Ditolak</option>
-                        </select>
-                    </form>
+                    {% if l.error %}
+                    <div class="error-cell" title="{{ l.error }}">{{ l.error }}</div>
+                    {% else %}-{% endif %}
+                </td>
+                <td>
+                    <div class="status-form">
+                        <form method="POST" action="{{ url_for('mailer.ubah_status', lamaran_id=l.id) }}">
+                            <select name="status" onchange="this.form.submit()">
+                                <option value="Menunggu" {% if l.status == 'Menunggu' %}selected{% endif %}>Menunggu</option>
+                                <option value="Dipanggil" {% if l.status == 'Dipanggil' %}selected{% endif %}>Dipanggil</option>
+                                <option value="Ditolak" {% if l.status == 'Ditolak' %}selected{% endif %}>Ditolak</option>
+                                <option value="Gagal" {% if l.status == 'Gagal' %}selected{% endif %}>Gagal</option>
+                            </select>
+                        </form>
+                        {% if l.status == 'Gagal' %}
+                        <form method="POST" action="{{ url_for('mailer.retry', lamaran_id=l.id) }}" onsubmit="return confirm('Kirim ulang lamaran ini?')">
+                            <button type="submit" class="btn btn-warning btn-sm">🔄 Retry</button>
+                        </form>
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% endfor %}

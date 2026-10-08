@@ -6,8 +6,6 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 
-from app.config import Config
-
 
 @dataclass
 class EmailResult:
@@ -17,7 +15,7 @@ class EmailResult:
 
 
 class EmailService:
-    def __init__(self, config: Config):
+    def __init__(self, config: dict):
         self.config = config
         self._context = ssl.create_default_context()
 
@@ -33,7 +31,7 @@ class EmailService:
             return EmailResult(False, "Format email tidak valid", "invalid_email")
 
         msg = EmailMessage()
-        msg["From"] = self.config.MAIL_DEFAULT_SENDER
+        msg["From"] = self.config["MAIL_DEFAULT_SENDER"]
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.set_content(body_text)
@@ -61,12 +59,12 @@ class EmailService:
 
     def _send_message(self, msg: EmailMessage, to_email: str) -> EmailResult:
         try:
-            with smtplib.SMTP(self.config.MAIL_SERVER, self.config.MAIL_PORT) as server:
+            with smtplib.SMTP(self.config["MAIL_SERVER"], self.config["MAIL_PORT"]) as server:
                 server.ehlo()
-                if self.config.MAIL_USE_TLS:
+                if self.config["MAIL_USE_TLS"]:
                     server.starttls(context=self._context)
                     server.ehlo()
-                server.login(self.config.MAIL_USERNAME, self.config.MAIL_PASSWORD)
+                server.login(self.config["MAIL_USERNAME"], self.config["MAIL_PASSWORD"])
                 server.send_message(msg)
             return EmailResult(True, f"Email terkirim ke {to_email}")
         except smtplib.SMTPAuthenticationError:
@@ -77,6 +75,18 @@ class EmailService:
             return EmailResult(False, f"Gagal kirim email: {str(e)}", "smtp_error")
         except Exception as e:
             return EmailResult(False, f"Error tidak terduga: {str(e)}", "unknown_error")
+
+
+class RateLimiter:
+    def __init__(self, delay_seconds: int):
+        self.delay_seconds = delay_seconds
+        self._last_sent = 0.0
+
+    def wait_if_needed(self) -> None:
+        elapsed = time.time() - self._last_sent
+        if elapsed < self.delay_seconds:
+            time.sleep(self.delay_seconds - elapsed)
+        self._last_sent = time.time()
 
 
 class RateLimiter:
